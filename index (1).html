@@ -101,10 +101,11 @@ var randomName = function() {
     return nameList[x];
 };
 
-var cpu = function(x,y,size,moveX,moveY,color,name) {
+var cpu = function(x,y,size,score,moveX,moveY,color,name) {
     this.x = x;
     this.y = y;
     this.size = size;
+    this.score = score;
     this.moveX = moveX;
     this.moveY = moveY;
     this.color = color;
@@ -118,7 +119,11 @@ var cpu = function(x,y,size,moveX,moveY,color,name) {
     var CPUSize;
     if (x) {CPUSize = floor(random(15,100));}
     else {CPUSize = 15;}
-    var newCPU = new cpu(random(3,fw-3),random(3,fh-3),CPUSize,random(3,fw-3),random(3,fh-3),randomColor(),randomName());
+    if (CPUSize >= 100) {
+        CPUSize = 100;
+    }
+    var CPUScore = CPUSize;
+    var newCPU = new cpu(random(3,fw-3),random(3,fh-3),CPUSize,CPUScore, random(3,fw-3),random(3,fh-3),randomColor(),randomName());
     CPUs.push(newCPU);
 
 
@@ -128,7 +133,8 @@ var cpu = function(x,y,size,moveX,moveY,color,name) {
 var start = function() {
     player.x=(fw/2);
     player.y=(fh/2);
-    player.size = 80000;
+    player.size = 50;
+    player.score = 50;
     player.color = (255,255,255);
 
     while (CPUs.length < nCPUs) {
@@ -142,7 +148,7 @@ var start = function() {
 var movePlayer = function() {
      var dx = (mouseX - w/2)/3;
      var dy = (mouseY - h/2)/3;
-     var maxSpeed = 500 / (player.size+40) + 5;
+     var maxSpeed = 500 / (player.score+40) + 5;
      var distSq = dx*dx + dy*dy;
     if (distSq > maxSpeed*maxSpeed) {
         var ratio = maxSpeed / sqrt(distSq);
@@ -158,13 +164,14 @@ var movePlayer = function() {
 var moveCPU = function(i) {
     var dx = (CPUs[i].moveX - CPUs[i].x)/3;
     var dy = (CPUs[i].moveY - CPUs[i].y)/3;
-    var maxSpeed = 700 / ((CPUs[i].size/4)+40) + 5;
+    var maxSpeed = 700 / ((CPUs[i].score/4)+40) + 5;
     var ratio = maxSpeed / sqrt(dx*dx + dy*dy);
     dx *= ratio+0.2;
     dy *= ratio+0.2;
     CPUs[i].x += dx/30;
     CPUs[i].y += dy/30;
     dx,dy,maxSpeed,ratio=null;
+    // setTimeout(console.log(CPUs[i].size), 5000);
 };
 
 var targetFood = function(i) {
@@ -179,10 +186,12 @@ var adjustPPU = function() {
     ppu = 45 / sqrt(sqrt(player.size));
     var lwh = w; //lesser of width and height
     if (h < w) {lwh = h;}
-    if (ppu*sqrt(player.size) > lwh*3/4) {
+    if (ppu*sqrt(player.score) > lwh*3/4) {
         ppu = (lwh*3/4)/sqrt(player.size);
         }
-
+    if (ppu <= 14.8) {
+        ppu = 14.8;
+    }
 };
 var reload=function() {
     location.reload(true);
@@ -204,7 +213,7 @@ var addFood = function() {
 
 //for leaderboard sorting
 var comp = function(a,b) {
-    return b.size - a.size;
+    return b.score - a.score;
 };
 
 var mouseReleased = function() {
@@ -348,8 +357,13 @@ var draw = function() {
 
             if ((foods[i].x*ppu-player.x*ppu)*(foods[i].x*ppu-player.x*ppu) + (foods[i].y*ppu-player.y*ppu)*(foods[i].y*ppu-player.y*ppu) < (sps*ppu/2)*(sps*ppu/2)) {
                 foods.splice(i,1);
-                player.size++;
-
+                if (player.size >= 100) {
+                    // player.size = 100;
+                    player.score++;    
+                } else {
+                   player.size++; 
+                   player.score++; 
+                }
                 addFood();
                 break; //Try to get rid of null-point problems
             }
@@ -361,15 +375,22 @@ var draw = function() {
     var drawCPU = function(){
         for (var i = 0; i < CPUs.length; i++) {
         var lineThickness = 40;
-        var greyValue = 255; // Gradient Opacity Value
+        var greyValue = 255;
+
+        // Gradient Opacity Value
         strokeWeight(4);
 
         // Starting from the Bottom and going Up
         for(var j = sqrt(CPUs[i].size)*ppu; j >= 0; j = j - lineThickness){
         // Top Gradient Color
         // Use Variable from For Loop to change each line's Position
-        fill(greyValue,0,0);
+        if (CPUs[i].score >= player.score) {
+            fill(greyValue,0,0);    
+        } else {
+            fill(0,greyValue,0);
+        }
         ellipse(CPUs[i].x*ppu,CPUs[i].y*ppu,sqrt(CPUs[i].size)*ppu,j);
+        // text(CPUs[i].score,CPUs[i].x*ppu,CPUs[i].y*ppu+scs*ppu/6);
         greyValue = greyValue - 15;
     }
 
@@ -409,7 +430,12 @@ var draw = function() {
 
             //eating food
             if (f % 15 === 0) {
-                CPUs[i].size += floor(random(2,6));
+                if (CPUs[i].size >= 100) {
+                    CPUs[i].score += floor(random(2,6));
+                } else {
+                    CPUs[i].score += floor(random(2,6));
+                    CPUs[i].size += floor(random(2,6));
+                }
 
                 targetFood(i);
             }
@@ -424,9 +450,17 @@ var draw = function() {
             //Eating CPUs
             //----------------
             //player circle equation:
+
             //(x-player.x*ppu)^2+(y-player.y*ppu)^2 < (sps*ppu/2)^2
-            if ((CPUs[i].x*ppu-player.x*ppu)*(CPUs[i].x*ppu-player.x*ppu) + (CPUs[i].y*ppu-player.y*ppu)*(CPUs[i].y*ppu-player.y*ppu) < (sps*ppu/2)*(sps*ppu/2) && CPUs[i].size < player.size) {
-                player.size += CPUs[i].size-15;
+            if ((CPUs[i].x*ppu-player.x*ppu)*(CPUs[i].x*ppu-player.x*ppu) + (CPUs[i].y*ppu-player.y*ppu)*(CPUs[i].y*ppu-player.y*ppu) < (sps*ppu/2)*(sps*ppu/2) && CPUs[i].score < player.score) {
+                if (player.size >= 100) {
+                    // player.size = 100;
+                    player.score += CPUs[i].score;    
+                } else {
+                    player.score += CPUs[i].score;
+                    player.size += CPUs[i].size;
+
+                }
                 CPUs.splice(i,1);
 
                 setTimeout(addCPU(false), 15000);
@@ -437,8 +471,14 @@ var draw = function() {
             //----------------
             //eating other CPUs
             for (var j = 0; j < CPUs.length; j++) {
-                if ((CPUs[j].x*ppu-CPUs[i].x*ppu)*(CPUs[j].x*ppu-CPUs[i].x*ppu) + (CPUs[j].y*ppu-CPUs[i].y*ppu)*(CPUs[j].y*ppu-CPUs[i].y*ppu) < (sqrt(CPUs[i].size)*ppu/2)*(sqrt(CPUs[i].size)*ppu/2) && CPUs[j].size < CPUs[i].size) {
-                    CPUs[i].size += CPUs[j].size;
+                if ((CPUs[j].x*ppu-CPUs[i].x*ppu)*(CPUs[j].x*ppu-CPUs[i].x*ppu) + (CPUs[j].y*ppu-CPUs[i].y*ppu)*(CPUs[j].y*ppu-CPUs[i].y*ppu) < (sqrt(CPUs[i].size)*ppu/2)*(sqrt(CPUs[i].size)*ppu/2) && CPUs[j].score < CPUs[i].score) {
+                    if (CPUs[i].size >= 100) {
+                        CPUs[i].size = 100;
+                        CPUs[i].score += CPUs[j].score;
+                    } else {
+                        CPUs[i].size += CPUs[j].size;
+                        CPUs[i].score += CPUs[j].score;
+                    }
                     CPUs.splice(j,1);
 
                     setTimeout(addCPU(false), 15000);
@@ -448,7 +488,7 @@ var draw = function() {
                 }
             }
             //eating you
-            if ((player.x*ppu-CPUs[i].x*ppu)*(player.x*ppu-CPUs[i].x*ppu) + (player.y*ppu-CPUs[i].y*ppu)*(player.y*ppu-CPUs[i].y*ppu) < (sqrt(CPUs[i].size)*ppu/2)*(sqrt(CPUs[i].size)*ppu/2)&&player.size < (CPUs[i].size)) {
+            if ((player.x*ppu-CPUs[i].x*ppu)*(player.x*ppu-CPUs[i].x*ppu) + (player.y*ppu-CPUs[i].y*ppu)*(player.y*ppu-CPUs[i].y*ppu) < (sqrt(CPUs[i].size)*ppu/2)*(sqrt(CPUs[i].size)*ppu/2)&&player.score < (CPUs[i].score)) {
 
 
                 reload();
@@ -460,6 +500,7 @@ var draw = function() {
             //moving the CPU
 
             moveCPU(i);
+            // console.log(player.size);
         }
 
         //player circle
@@ -479,13 +520,14 @@ var draw = function() {
         textSize(sps*ppu/5);
         fill(255,0,0);
         text(player.name,player.x*ppu-1,player.y*ppu+1);
+        // text(CPUs[i].score,CPUs[i].x*ppu,CPUs[i].y*ppu+scs*ppu/6);
         //fill(255,0,0);
         //text(player.name,player.x*ppu,player.y*ppu);*/
         textSize(sps*ppu/6);
         //fill(0,0,0);
         //text(player.size-9,player.x*ppu-1,player.y*ppu+sps*ppu/6+1);*/
         fill(0,0,0);
-        text(player.size,player.x*ppu,player.y*ppu+sps*ppu/6);
+        text(player.score,player.x*ppu,player.y*ppu+sps*ppu/6);
         popMatrix();
 
         //leaderboard
@@ -510,11 +552,11 @@ var draw = function() {
 
                 leaderboardName += ((i+1) + ". ");
                 if (top5[i].name === "") {
-                leaderboardStr += player.size;
+                leaderboardStr += player.score;
                 leaderboardName +=player.name;
                 }
                 else {
-                leaderboardStr += top5[i].size;
+                leaderboardStr += top5[i].score;
                 leaderboardName +=top5[i].name;
                 }
                 fill(255,255,255);
