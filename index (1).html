@@ -226,7 +226,9 @@ var mouseReleased = function() {
         typing = false;
     }
     if (!started && mouseX > w/2-125 && mouseX < w/2+125 && mouseY > h/2-20 && mouseY < h/2+20) {
-        start();
+        if (player.name.length !== 0) {
+            start();
+        }
     }
 };
 var keyPressed = function() {
@@ -387,6 +389,9 @@ var draw = function() {
 
         // Starting from the Bottom and going Up
         for(var j = sqrt(CPUs[i].size)*ppu; j >= 0; j = j - lineThickness){
+            if (CPUs[i].size >= 100) {
+                CPUs[i].size = 100;
+            }
         // Top Gradient Color
         // Use Variable from For Loop to change each line's Position
         if (CPUs[i].score >= player.score) {
@@ -420,6 +425,9 @@ var draw = function() {
 
 
         for (var i = 0; i < CPUs.length; i++) {
+            if (CPUs[i].size >= 100) {
+                CPUs[i].size = 100;
+            }
             //making sure CPUs don't go off the map
             var scs = sqrt(CPUs[i].size);
             if (CPUs[i].x < scs/2) {
@@ -449,6 +457,9 @@ var draw = function() {
             if (f % 60 === 0 && random(0,1) > 0.5) {
                 CPUs[i].size -= min(floor(CPUs[i].size*0.02),5); //decrease CPU size by 2% every second
                 if (CPUs[i].size < 15) {CPUs[i].size = 15;} //minimum size
+                if (CPUs[i].size >= 100) {
+                    CPUs[i].size = 100;
+                }
 
             }
 
