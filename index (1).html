@@ -133,8 +133,8 @@ var cpu = function(x,y,size,score,moveX,moveY,color,name) {
 var start = function() {
     player.x=(fw/2);
     player.y=(fh/2);
-    player.size = 50;
-    player.score = 50;
+    player.size = 80000;
+    player.score = 80000;
     player.color = (255,255,255);
 
     while (CPUs.length < nCPUs) {
@@ -183,10 +183,13 @@ var targetFood = function(i) {
 };
 
 var adjustPPU = function() {
+    if (player.size >= 100) {
+        player.size = 100;
+    }
     ppu = 45 / sqrt(sqrt(player.size));
     var lwh = w; //lesser of width and height
     if (h < w) {lwh = h;}
-    if (ppu*sqrt(player.score) > lwh*3/4) {
+    if (ppu*sqrt(player.size) > lwh*3/4) {
         ppu = (lwh*3/4)/sqrt(player.size);
         }
     if (ppu <= 14.8) {
@@ -306,7 +309,9 @@ var draw = function() {
     } else {
         background(0,0,0);
 
-
+        if (player.size >= 100) {
+            player.size = 100;
+        }
         var sps = sqrt(player.size);
 
 
@@ -358,7 +363,7 @@ var draw = function() {
             if ((foods[i].x*ppu-player.x*ppu)*(foods[i].x*ppu-player.x*ppu) + (foods[i].y*ppu-player.y*ppu)*(foods[i].y*ppu-player.y*ppu) < (sps*ppu/2)*(sps*ppu/2)) {
                 foods.splice(i,1);
                 if (player.size >= 100) {
-                    // player.size = 100;
+                    player.size = 100;
                     player.score++;    
                 } else {
                    player.size++; 
@@ -454,7 +459,7 @@ var draw = function() {
             //(x-player.x*ppu)^2+(y-player.y*ppu)^2 < (sps*ppu/2)^2
             if ((CPUs[i].x*ppu-player.x*ppu)*(CPUs[i].x*ppu-player.x*ppu) + (CPUs[i].y*ppu-player.y*ppu)*(CPUs[i].y*ppu-player.y*ppu) < (sps*ppu/2)*(sps*ppu/2) && CPUs[i].score < player.score) {
                 if (player.size >= 100) {
-                    // player.size = 100;
+                    player.size = 100;
                     player.score += CPUs[i].score;    
                 } else {
                     player.score += CPUs[i].score;
